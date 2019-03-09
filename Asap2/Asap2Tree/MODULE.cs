@@ -21,6 +21,9 @@ namespace Asap2
         [Element(2, IsString = true, ForceNewLine = true)]
         public string LongIdentifier { get; private set; }
 
+        [Element(3, IsList = true)]
+        public List<IF_DATA> if_data = new List<IF_DATA>();
+
         /// <summary>
         /// MODULE elements that is generic.
         /// </summary>

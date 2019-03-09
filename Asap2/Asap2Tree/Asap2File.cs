@@ -864,16 +864,12 @@ namespace Asap2
     [Base()]
     public class IF_DATA : Asap2Base
     {
-        public IF_DATA(Location location, string data) : base(location)
+        public IF_DATA(Location location, string name) : base(location)
         {
-            this.data = data;
-            char[] delimiterChars = { ' ', '\t' };
-            string[] words = data.Split(delimiterChars);
-            this.name = words[0];
+            this.name = name;
         }
+
         public string name { get; private set; }
-        [Element(0, IsArgument = true)]
-        public string data;
     }
 
     [Base()]

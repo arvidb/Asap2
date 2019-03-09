@@ -7,6 +7,7 @@
 
 %union { 
             public decimal d;
+            public Nullable<decimal> d_null;
             public String s;
             public StringBuilder sb;
             public ALIGNMENT.ALIGNMENT_type alignment_token;
@@ -21,6 +22,20 @@
             public ECU_ADDRESS ecu_address;
             public ECU_ADDRESS_EXTENSION ecu_address_ext;
             public IF_DATA if_data;
+
+            /* ASAP1B_DIAGNOSTIC_SERVICES */
+            public IF_DATA_ASAP1B_DIAGNOSTIC_SERVICES if_data_asap1b_diag;
+            public TP_BLOB tp_blob;
+            public CAN_BLOB can_blob;
+
+            /* XCP */
+            public IF_DATA_XCP if_data_xcp;
+            public IF_DATA_SEGMENT_XCP if_data_segment_xcp;
+            public PROTOCOL_LAYER protocol_layer;
+            public XCP_ON_CAN xcp_on_can;
+            public DAQ daq;
+            public DAQList daq_list;
+
             public A2ML a2ml;
             public ANNOTATION annotation;
             public ANNOTATION_TEXT annotation_text;
@@ -69,7 +84,6 @@
 
 %token <d> NUMBER
 %token <s> QUOTED_STRING
-%token <s> IF_DATA
 %token <s> IDENTIFIER
 
 %token <s> A2ML
@@ -206,6 +220,26 @@
 %token VAR_FORBIDDEN_COMB
 %token VAR_SEPERATOR
 %token VAR_NAMING
+%token IF_DATA
+
+/* ASAP1B_DIAGNOSTIC_SERVICES */
+%token ASAP1B_DIAGNOSTIC_SERVICES
+%token TP_BLOB
+%token CAN
+%token SOURCE
+%token ADDRESS
+
+/* XCP */
+%token XCP
+%token PROTOCOL_LAYER
+%token STIM
+%token XCP_ON_CAN
+%token DAQ
+%token DAQ_LIST
+%token FIRST_PID
+%token EVENT_FIXED
+%token EVENT
+
 %token BEGIN
 %token END
 %token maxParseToken COMMENT
@@ -271,6 +305,31 @@
 %type <max_refresh>         max_refresh
 %type <symbol_link>         symbol_link
 %type <if_data>             if_data
+%type <if_data>             if_data_data
+
+/* ASAP1B_DIAGNOSTIC_SERVICES */
+%type <if_data_asap1b_diag> if_data_asap1b_diag
+%type <if_data_asap1b_diag> if_data_asap1b_diag_data
+%type <tp_blob>             tp_blob
+%type <tp_blob>             tp_blob_data
+%type <can_blob>            can_blob
+%type <can_blob>            can_blob_data
+
+/* XCP */
+%type <if_data_xcp>         if_data_xcp
+%type <if_data_xcp>         if_data_xcp_data
+%type <if_data_segment_xcp> if_data_segment_xcp
+%type <if_data_segment_xcp> if_data_segment_xcp_data
+%type <protocol_layer>      protocol_layer
+%type <protocol_layer>      protocol_layer_data
+%type <xcp_on_can>          xcp_on_can
+%type <xcp_on_can>          xcp_on_can_data
+%type <daq>                 daq
+%type <daq>                 daq_data
+%type <daq_list>            daq_list_data
+%type <d_null>              daq_list_first_pid
+%type <d_null>              daq_list_event_fixed
+
 %type <var_address>         var_address
 %type <var_characteristic> var_characteristic
 %type <var_criterion>       var_criterion
@@ -912,13 +971,21 @@ module_data :   IDENTIFIER QUOTED_STRING {
                         yywarning(e.ToString());
                     }
                 }
+                | module_data if_data_xcp {
+                    $$ = $1;
+                    $$.if_data.Add($2);
+                }
+                | module_data if_data_asap1b_diag {
+                    $$ = $1;
+                    $$.if_data.Add($2);
+                }
                 | module_data if_data {
                     $$ = $1;
-                    $$.elements.Add($2);
+                    $$.if_data.Add($2);
                 }
                 | module_data a2ml {
                     $$ = $1;
-                        $$.elements.Add($2);
+                    $$.elements.Add($2);
                 }
                 | module_data compu_method {
                     $$ = $1;
@@ -1061,10 +1128,176 @@ module_data :   IDENTIFIER QUOTED_STRING {
                     $$.elements.Add($2);
                 }
                 ;
-
-if_data         : BEGIN IF_DATA {
-                    $$ = new IF_DATA(@$, $2);
+protocol_layer  : BEGIN PROTOCOL_LAYER protocol_layer_data END PROTOCOL_LAYER {
+                    $$ = $3;
                 }
+                ;
+
+protocol_layer_data : NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER IDENTIFIER IDENTIFIER {
+                    $$ = new PROTOCOL_LAYER(@1, (UInt64)$1, (UInt64)$9, (UInt64)$10, $11, $12);
+                    $$.Timeouts.Add((UInt64)$2);
+                    $$.Timeouts.Add((UInt64)$3);
+                    $$.Timeouts.Add((UInt64)$4);
+                    $$.Timeouts.Add((UInt64)$5);
+                    $$.Timeouts.Add((UInt64)$6);
+                    $$.Timeouts.Add((UInt64)$7);
+                    $$.Timeouts.Add((UInt64)$8);
+                }
+                | protocol_layer_data catch_unhandled_items
+                ;
+
+xcp_on_can  : BEGIN XCP_ON_CAN xcp_on_can_data END XCP_ON_CAN {
+                    $$ = $3;
+                }
+                ;
+
+xcp_on_can_data : NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER {
+                    $$ = new XCP_ON_CAN(@1, (UInt64)$1, (UInt64)$3, (UInt64)$5, (UInt64)$7);
+                }
+                | xcp_on_can_data catch_unhandled_items
+                ;
+
+daq  : BEGIN DAQ daq_data END DAQ {
+                    $$ = $3;
+                }
+                ;
+
+daq_list_type : DAQ
+              | STIM
+              ;
+
+daq_list_first_pid : empty
+                     | FIRST_PID NUMBER {
+                        $$ = $2;
+                     }
+                     ;  
+
+daq_list_event_fixed : empty
+                     | EVENT_FIXED NUMBER {
+                        $$ = $2;
+                     }
+                     ;                           
+                        
+daq_list_data : NUMBER IDENTIFIER daq_list_type IDENTIFIER NUMBER IDENTIFIER NUMBER daq_list_first_pid daq_list_event_fixed {
+            $$ = new DAQList(@1, (UInt64)$1, $3.s, (UInt64)$5, (UInt64)$7, $8, $9);
+		 }
+		 ;
+      
+event_data : QUOTED_STRING QUOTED_STRING NUMBER DAQ NUMBER NUMBER NUMBER NUMBER {
+		 }
+		 ;
+
+daq_data : IDENTIFIER NUMBER NUMBER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER IDENTIFIER NUMBER IDENTIFIER {
+                    $$ = new DAQ(@1, $1, (UInt64)$2, (UInt64)$3, (UInt64)$4, $5, $6, $7, $8, (UInt64)$9, $10);
+                }
+				| daq_data BEGIN DAQ_LIST daq_list_data END DAQ_LIST {
+                    $$.DAQLists.Add($4);
+                }
+				| daq_data BEGIN EVENT event_data END EVENT
+				| daq_data catch_unhandled_items
+                ;
+
+if_data_xcp     : BEGIN IF_DATA XCP if_data_xcp_data END IF_DATA {
+                    $$ = $4;
+                }
+                ;
+
+if_data_xcp_data : {
+					$$ = new IF_DATA_XCP(@$);
+				}
+                | if_data_xcp_data protocol_layer {
+                    $$ = $1;
+                    $$.ProtocolLayer    = $2;
+                }
+                | if_data_xcp_data xcp_on_can {
+                    $$ = $1;
+                    $$.TransportLayer.Add($2);
+                }
+				| if_data_xcp_data daq {
+                    $$ = $1;
+                    $$.DAQInfo.Add($2);
+                }
+                | if_data_xcp_data catch_unhandled_items
+                ;   
+
+if_data_segment_xcp : BEGIN IF_DATA XCP if_data_segment_xcp_data END IF_DATA {
+                    $$ = $4;
+                }
+                ;
+
+if_data_segment_xcp_data : {
+                    $$ = new IF_DATA_SEGMENT_XCP(@$);
+                }
+                | if_data_segment_xcp_data catch_unhandled_items
+                ;                
+
+source : BEGIN SOURCE source_data END SOURCE {
+        }
+        ;
+
+source_data :
+        | source_data can_blob
+        | source_data IDENTIFIER CAN
+        | source_data catch_unhandled_items
+        ;        
+
+tp_blob : BEGIN TP_BLOB tp_blob_data END TP_BLOB {
+            $$ = $3;
+        }        
+        ;
+
+tp_blob_data : {
+                $$ = new TP_BLOB(@$);
+             }
+             | tp_blob_data can_blob {
+                $$ = $1;
+                $$.CANBlob = $2;
+             }
+             | tp_blob_data catch_unhandled_items
+             ; 
+
+can_blob : BEGIN CAN can_blob_data END CAN {
+            $$ = $3;
+        }        
+        ;
+
+can_blob_data : {
+                $$ = new CAN_BLOB(@$);
+             }
+             | can_blob_data BEGIN ADDRESS NUMBER NUMBER END ADDRESS {
+                $$.USDTSendId = (UInt64)$4;
+                $$.USDTReceiveId = (UInt64)$5;
+             }
+             | can_blob_data catch_unhandled_items
+             ;                                                    
+
+if_data_asap1b_diag  : BEGIN IF_DATA ASAP1B_DIAGNOSTIC_SERVICES if_data_asap1b_diag_data END IF_DATA {
+                    $$ = $4;
+                }
+                ;
+
+if_data_asap1b_diag_data : {
+                    $$ = new IF_DATA_ASAP1B_DIAGNOSTIC_SERVICES(@$);
+                }
+                | if_data_asap1b_diag_data tp_blob {
+                    $$ = $1;
+                    $$.TPBlob = $2;
+                }
+                | if_data_asap1b_diag_data source {
+                    // TODO
+                }
+                | if_data_asap1b_diag_data catch_unhandled_items
+                ;
+
+if_data  : BEGIN IF_DATA if_data_data END IF_DATA {
+                    $$ = $3;
+                }
+                ;
+
+if_data_data : IDENTIFIER {
+					$$ = new IF_DATA(@$, $1);
+                }
+                | if_data_data catch_unhandled_items
                 ;
 
 mod_common      : BEGIN MOD_COMMON mod_common_data END MOD_COMMON {
@@ -1399,7 +1632,11 @@ memory_segment_data : IDENTIFIER QUOTED_STRING IDENTIFIER IDENTIFIER IDENTIFIER 
                     MEMORY_SEGMENT.Attribute Attribute = (MEMORY_SEGMENT.Attribute)EnumToStringOrAbort(typeof(MEMORY_SEGMENT.Attribute), $5);
                     $$ = new MEMORY_SEGMENT(@$, $1, $2, PrgType, MemoryType, Attribute, (UInt64)$6, (UInt64)$7, (Int64)$8, (Int64)$9, (Int64)$10, (Int64)$11, (Int64)$12);
                 }
-                |  memory_segment_data if_data {
+                | memory_segment_data if_data_segment_xcp {
+                    $$ = $1;
+                    $$.if_data.Add($2);
+                }
+                | memory_segment_data if_data {
                     $$ = $1;
                     $$.if_data.Add($2);
                 }
@@ -1819,6 +2056,27 @@ var_address
         $$.Addresses.Add((UInt64)$2);
     }
     ;
+
+/* Catch all parameter */
+any_parameter : IDENTIFIER
+                | QUOTED_STRING
+                | NUMBER
+				| BEGIN IDENTIFIER any_parameter_list_data END IDENTIFIER
+                ;
+
+any_parameter_list_data
+    :
+	| any_parameter_list_data catch_unhandled_items
+    ;
+
+/* Catches all unhandled items */
+catch_unhandled_items
+    :
+	| any_parameter
+    ;
+
+empty :
+      ;
 
 %%
 

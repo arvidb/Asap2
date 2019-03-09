@@ -9,8 +9,7 @@
     // User code is all now in Asap2.Scanner.cs
 %}
 
-
-Identifier              [A-Za-z_][A-Za-z0-9_\.\[\]]*
+Identifier              [A-Za-z_][A-Za-z0-9@\-_\.\[\]]*
 Space                   [ \t\u000c]
 Decimal                 [\-+]?[0-9]*\.?[0-9]+([eE][\-+]?[0-9]+)?
 HexNumber               0x[0-9A-Fa-f]+
@@ -27,7 +26,6 @@ CommentEnd		\*\/
 LineComment		("//"[^\n]*)
 
 %x STATE_STRING
-%x STATE_IF_DATA
 %x STATE_A2ML
 %x ML_COMMENT
 %x STATE_INCL
@@ -174,7 +172,26 @@ VARIANT_CODING                  { return Make(Token.VARIANT_CODING); }
 VAR_FORBIDDEN_COMB              { return Make(Token.VAR_FORBIDDEN_COMB); }
 VAR_SEPERATOR                   { return Make(Token.VAR_SEPERATOR); }
 VAR_NAMING                      { return Make(Token.VAR_NAMING); }
-IF_DATA                         { yy_push_state (STATE_IF_DATA); yylval.sb = new StringBuilder(); }
+IF_DATA                         { return Make(Token.IF_DATA); }
+
+/* ASAP1B_DIAGNOSTIC_SERVICES */
+ASAP1B_DIAGNOSTIC_SERVICES      { return Make(Token.ASAP1B_DIAGNOSTIC_SERVICES); }
+TP_BLOB                         { return Make(Token.TP_BLOB); }
+CAN                             { return Make(Token.CAN); }
+SOURCE                          { return Make(Token.SOURCE); }
+ADDRESS                         { return Make(Token.ADDRESS); }
+
+/* XCP */
+XCP                             { return Make(Token.XCP); }
+STIM                            { return Make(Token.STIM); }
+XCP_ON_CAN                      { return Make(Token.XCP_ON_CAN); }
+PROTOCOL_LAYER                  { return Make(Token.PROTOCOL_LAYER); }
+DAQ                             { return Make(Token.DAQ); }
+DAQ_LIST                        { return Make(Token.DAQ_LIST); }
+EVENT_FIXED                     { return Make(Token.EVENT_FIXED); }
+FIRST_PID                       { return Make(Token.FIRST_PID); }
+EVENT                           { return Make(Token.EVENT); }
+
 A2ML                            { yy_push_state (STATE_A2ML); yylval.sb = new StringBuilder(); }
 
 "\/include"                     { yy_push_state(STATE_INCL); }
@@ -187,14 +204,6 @@ A2ML                            { yy_push_state (STATE_A2ML); yylval.sb = new St
     {Eol}           { yy_pop_state(); TryInclude(null); }
     [ \t]               /* skip whitespace */
     [^ \t]{IncFile} { yy_pop_state(); TryInclude(yytext); }
-}
-
-<STATE_IF_DATA> {
-    "\/end IF_DATA" { yy_pop_state(); return MakeStringBuilder(Token.IF_DATA); }
-    \\.             { yylval.sb.Append(yytext); }
-    \r?\n           { yylval.sb.Append("\r\n"); }
-    .               { yylval.sb.Append(yytext); }
-    <<EOF>>         { ; /* raise an error. */ }
 }
 
 <STATE_A2ML> {

@@ -88,6 +88,8 @@
     <Compile Include="tools\Remover.cs" />
     <Compile Include="tools\Options.cs" />
     <Compile Include="tools\Merger.cs" />
+    <Compile Include="Asap2Tree\IF_DATA_XCP.cs" />
+    <Compile Include="Asap2Tree\IF_DATA_ASAP1B_DIAGNOSTIC_SERVICES.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
