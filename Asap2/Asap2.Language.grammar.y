@@ -39,6 +39,7 @@
             public IF_DATA_SEGMENT_XCP if_data_segment_xcp;
             public PROTOCOL_LAYER protocol_layer;
             public XCP_ON_CAN xcp_on_can;
+            public XCP_ON_UDP_IP xcp_on_udp_ip;
             public DAQ daq;
             public DAQList daq_list;
 
@@ -255,12 +256,15 @@
 %token STIM
 %token DAQ_STIM
 %token XCP_ON_CAN
+%token XCP_ON_UDP_IP
 %token DAQ
 %token DAQ_LIST
 %token DAQ_EVENT
 %token FIRST_PID
 %token EVENT_FIXED
 %token EVENT
+
+%token HOST_NAME
 
 %token BEGIN
 %token END
@@ -354,11 +358,16 @@
 %type <protocol_layer>      protocol_layer_data
 %type <xcp_on_can>          xcp_on_can
 %type <xcp_on_can>          xcp_on_can_data
+%type <xcp_on_udp_ip>       xcp_on_udp_ip
+%type <xcp_on_udp_ip>       xcp_on_udp_ip_data
 %type <daq>                 daq
 %type <daq>                 daq_data
 %type <daq_list>            daq_list_data
 %type <d_null>              daq_list_first_pid
 %type <d_null>              daq_list_event_fixed
+
+%type <s>                   hostname_optional
+%type <s>                   address_optional
 
 %type <var_address>         var_address
 %type <var_characteristic> var_characteristic
@@ -1186,6 +1195,29 @@ xcp_on_can_data : NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER {
                 }
                 | xcp_on_can_data catch_unhandled_items
                 ;
+                
+xcp_on_udp_ip  : BEGIN XCP_ON_UDP_IP xcp_on_udp_ip_data END XCP_ON_UDP_IP {
+                    $$ = $3;
+                }
+                ;
+                
+hostname_optional : empty
+                  | HOST_NAME QUOTED_STRING {
+                    $$ = $2;
+                  }
+                  ;                 
+                
+address_optional : empty
+                  | ADDRESS QUOTED_STRING {
+                    $$ = $2;
+                  }
+                  ;
+                                  
+xcp_on_udp_ip_data : NUMBER NUMBER hostname_optional address_optional {
+                    $$ = new XCP_ON_UDP_IP(@1, (UInt64)$1, (UInt64)$2, $3, $4);
+                }
+                | xcp_on_udp_ip_data catch_unhandled_items
+                ;
 
 daq  : BEGIN DAQ daq_data END DAQ {
                     $$ = $3;
@@ -1246,6 +1278,10 @@ if_data_xcp_data : {
                     $$.ProtocolLayer    = $2;
                 }
                 | if_data_xcp_data xcp_on_can {
+                    $$ = $1;
+                    $$.TransportLayer.Add($2);
+                }
+                | if_data_xcp_data xcp_on_udp_ip {
                     $$ = $1;
                     $$.TransportLayer.Add($2);
                 }

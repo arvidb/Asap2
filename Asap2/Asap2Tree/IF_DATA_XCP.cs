@@ -32,7 +32,7 @@ namespace Asap2
 
     public class XCP_ON_CAN : XCPTransportLayer
     {
-        public XCP_ON_CAN(Location location, ulong version, ulong masterId, ulong slaveId, ulong baudrate) : base(location)
+        public XCP_ON_CAN(Location location, UInt64 version, UInt64 masterId, UInt64 slaveId, UInt64 baudrate) : base(location)
         {
             this.Version = version;
             this.MasterId = masterId;
@@ -46,9 +46,25 @@ namespace Asap2
         public UInt64 Baudrate { get; }
     }
 
+    public class XCP_ON_UDP_IP : XCPTransportLayer
+    {
+        public XCP_ON_UDP_IP(Location location, UInt64 version, UInt64 port, string hostname, string address) : base(location)
+        {
+            this.Version = version;
+            this.Port = port;
+            this.Hostname = hostname;
+            this.Address = address;
+        }
+
+        public UInt64 Version { get; }
+        public UInt64 Port { get; }
+        public string Hostname { get; }
+        public string Address { get; }
+    }
+
     public class PROTOCOL_LAYER : Asap2Base
     {
-        public PROTOCOL_LAYER(Location location, ulong version, ulong maxCTO, ulong maxDTO, string byteOrder, string addressGranularity) : base(location)
+        public PROTOCOL_LAYER(Location location, UInt64 version, UInt64 maxCTO, UInt64 maxDTO, string byteOrder, string addressGranularity) : base(location)
         {
             this.Version = version;
             this.MaxCTO = maxCTO;
@@ -70,8 +86,8 @@ namespace Asap2
 
     public class DAQ : Asap2Base
     {
-        public DAQ(Location location, string type, ulong maxDAQ, ulong maxEventChannel, ulong minDAQ, 
-            string optimisationType, string addressExtension, string identificationField, string granularityType, ulong maxODTEntrySizeDAQ, string overloadIndication) : base(location)
+        public DAQ(Location location, string type, UInt64 maxDAQ, UInt64 maxEventChannel, UInt64 minDAQ, 
+            string optimisationType, string addressExtension, string identificationField, string granularityType, UInt64 maxODTEntrySizeDAQ, string overloadIndication) : base(location)
         {
             this.type = type;
             this.maxDAQ = maxDAQ;

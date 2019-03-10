@@ -16,7 +16,7 @@ namespace Asap2
 
     public class SOURCE : Asap2Base
     {
-        public SOURCE(Location location, string name, long scalingUnit, long rate) : base(location)
+        public SOURCE(Location location, string name, Int64 scalingUnit, Int64 rate) : base(location)
         {
             Name = name;
             ScalingUnit = scalingUnit;
@@ -58,7 +58,7 @@ namespace Asap2
             BYTEORDER_MSB_LAST = 2
         }
 
-        public TP_BLOB(Location location, ulong version, string protocolVersion, BYTEORDER byteOrder) : base(location)
+        public TP_BLOB(Location location, UInt64 version, string protocolVersion, BYTEORDER byteOrder) : base(location)
         {
             Version = version;
             ProtocolVersion = protocolVersion;
@@ -74,8 +74,8 @@ namespace Asap2
 
     public class CAN_BLOB : Asap2Base
     {
-        public CAN_BLOB(Location location, ulong baudrate, ulong samplePoint, ulong samplesPerBit, 
-            ulong bTLCycles, ulong sJW, ulong syncEdge, Tuple<ulong, ulong> networkLimits) : base(location)
+        public CAN_BLOB(Location location, UInt64 baudrate, UInt64 samplePoint, UInt64 samplesPerBit, 
+            UInt64 bTLCycles, UInt64 sJW, UInt64 syncEdge, Tuple<UInt64, UInt64> networkLimits) : base(location)
         {
             Baudrate = baudrate;
             SamplePoint = samplePoint;
@@ -103,14 +103,14 @@ namespace Asap2
 
     public class UUDT_CAN_IDS : IdentifierRange
     {
-        public UUDT_CAN_IDS(Location location, ulong firstId, ulong lastId) : base(location, firstId, lastId)
+        public UUDT_CAN_IDS(Location location, UInt64 firstId, UInt64 lastId) : base(location, firstId, lastId)
         {
         }
     }
 
     public class AVAILABLE_PERIODIC_IDENTIFIER_RANGE : IdentifierRange
     {
-        public AVAILABLE_PERIODIC_IDENTIFIER_RANGE(Location location, ulong firstId, ulong lastId) : base(location, firstId, lastId)
+        public AVAILABLE_PERIODIC_IDENTIFIER_RANGE(Location location, UInt64 firstId, UInt64 lastId) : base(location, firstId, lastId)
         {
         }
     }

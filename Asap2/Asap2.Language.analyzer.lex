@@ -197,6 +197,7 @@ XCP                             { return Make(Token.XCP); }
 STIM                            { return Make(Token.STIM); }
 DAQ_STIM                        { return Make(Token.DAQ_STIM); }
 XCP_ON_CAN                      { return Make(Token.XCP_ON_CAN); }
+XCP_ON_UDP_IP                   { return Make(Token.XCP_ON_UDP_IP); }
 PROTOCOL_LAYER                  { return Make(Token.PROTOCOL_LAYER); }
 DAQ                             { return Make(Token.DAQ); }
 DAQ_LIST                        { return Make(Token.DAQ_LIST); }
@@ -204,6 +205,7 @@ DAQ_EVENT                       { return Make(Token.DAQ_EVENT); }
 EVENT_FIXED                     { return Make(Token.EVENT_FIXED); }
 FIRST_PID                       { return Make(Token.FIRST_PID); }
 EVENT                           { return Make(Token.EVENT); }
+HOST_NAME                       { return Make(Token.HOST_NAME); }
 
 A2ML                            { yy_push_state (STATE_A2ML); yylval.sb = new StringBuilder(); }
 
