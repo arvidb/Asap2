@@ -30,20 +30,36 @@ namespace Asap2
         }
     }
 
+    public class DAQListCanId : Asap2Base
+    {
+        public DAQListCanId(Location location, UInt64 number, UInt64 canid) : base(location)
+        {
+            this.Number = number;
+            this.CANId = canid;
+        }
+
+        public UInt64 Number { get; }
+        public UInt64 CANId { get; }
+    }
+
     public class XCP_ON_CAN : XCPTransportLayer
     {
-        public XCP_ON_CAN(Location location, UInt64 version, UInt64 masterId, UInt64 slaveId, UInt64 baudrate) : base(location)
+        public XCP_ON_CAN(Location location, UInt64 version, UInt64? broadcastId, UInt64 masterId, UInt64 slaveId, UInt64 baudrate) : base(location)
         {
             this.Version = version;
+            this.BroadcastId = broadcastId;
             this.MasterId = masterId;
             this.SlaveId = slaveId;
             this.Baudrate = baudrate;
         }
 
         public UInt64 Version { get; }
+        public UInt64? BroadcastId { get; }
         public UInt64 MasterId { get; }
         public UInt64 SlaveId { get; }
         public UInt64 Baudrate { get; }
+
+        public List<DAQListCanId> DAQCANIds { get; } = new List<DAQListCanId>();
     }
 
     public class XCP_ON_UDP_IP : XCPTransportLayer
@@ -116,26 +132,51 @@ namespace Asap2
 
         public string overloadIndication { get; }
 
-        public List<DAQList> DAQLists = new List<DAQList>();
+        public List<DAQList> DAQLists { get; } = new List<DAQList>();
+        public List<DAQEvent> DAQEvents { get; } = new List<DAQEvent>();
     }
 
     public class DAQList : Asap2Base
     {
-        public DAQList(Location location, UInt64 number, string type, UInt64 maxOdt, UInt64 maxOdtEntries, decimal? firstPID, decimal? eventFixed) : base(location)
+        public DAQList(Location location, UInt64 number, string type, UInt64 maxOdt, UInt64 maxOdtEntries, UInt64? firstPID, UInt64? eventFixed) : base(location)
         {
             this.Number = number;
             this.Type = type;
             this.MaxOdt = maxOdt;
             this.MaxOdtEntries = maxOdtEntries;
-            this.FirstPID = (UInt64)(firstPID ?? 0);
-            this.EventFixed = (UInt64)(eventFixed ?? 0);
+            this.FirstPID = firstPID;
+            this.EventFixed = eventFixed;
         }
 
         public UInt64 Number { get; }
         public string Type { get; }
         public UInt64 MaxOdt { get; }
         public UInt64 MaxOdtEntries { get; }
-        public UInt64 FirstPID { get; }
-        public UInt64 EventFixed { get; }
+        public UInt64? FirstPID { get; }
+        public UInt64? EventFixed { get; }
+    }
+
+    public class DAQEvent : Asap2Base
+    {
+        public DAQEvent(Location location, string name, string shortName, UInt64 channelNumber, string direction, UInt64 maxDAQLists, UInt64 timeCycle, UInt64 timeUnit, UInt64 priority) : base(location)
+        {
+            Name = name;
+            ShortName = shortName;
+            ChannelNumber = channelNumber;
+            Direction = direction;
+            MaxDAQLists = maxDAQLists;
+            TimeCycle = timeCycle;
+            TimeUnit = timeUnit;
+            Priority = priority;
+        }
+
+        public string Name { get; }
+        public string ShortName { get; }
+        public UInt64 ChannelNumber { get; }
+        public string Direction { get; }
+        public UInt64 MaxDAQLists { get; }
+        public UInt64 TimeCycle { get; }
+        public UInt64 TimeUnit { get; }
+        public UInt64 Priority { get; }
     }
 }

@@ -38,11 +38,13 @@
             public IF_DATA_XCP if_data_xcp;
             public IF_DATA_SEGMENT_XCP if_data_segment_xcp;
             public PROTOCOL_LAYER protocol_layer;
+            public DAQListCanId daq_list_can_id;
             public XCP_ON_CAN xcp_on_can;
             public XCP_ON_UDP_IP xcp_on_udp_ip;
             public DAQ daq;
             public DAQList daq_list;
-
+            public DAQEvent daq_event;
+            
             public A2ML a2ml;
             public ANNOTATION annotation;
             public ANNOTATION_TEXT annotation_text;
@@ -263,6 +265,12 @@
 %token FIRST_PID
 %token EVENT_FIXED
 %token EVENT
+%token DAQ_LIST_CAN_ID
+%token CAN_ID_BROADCAST
+%token CAN_ID_MASTER
+%token CAN_ID_SLAVE
+%token FIXED
+%token VARIABLE
 
 %token HOST_NAME
 
@@ -356,6 +364,7 @@
 %type <if_data>             if_data_measurement_xcp_data
 %type <protocol_layer>      protocol_layer
 %type <protocol_layer>      protocol_layer_data
+%type <d_null>              can_id_broadcast_optional
 %type <xcp_on_can>          xcp_on_can
 %type <xcp_on_can>          xcp_on_can_data
 %type <xcp_on_udp_ip>       xcp_on_udp_ip
@@ -363,6 +372,9 @@
 %type <daq>                 daq
 %type <daq>                 daq_data
 %type <daq_list>            daq_list_data
+%type <daq_list_can_id>     daq_list_can_id
+%type <daq_list_can_id>     daq_list_can_id_data
+%type <daq_event>           daq_event_data
 %type <d_null>              daq_list_first_pid
 %type <d_null>              daq_list_event_fixed
 
@@ -1184,18 +1196,41 @@ protocol_layer_data : NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NU
                 }
                 | protocol_layer_data catch_unhandled_items
                 ;
-
+                               
 xcp_on_can  : BEGIN XCP_ON_CAN xcp_on_can_data END XCP_ON_CAN {
                     $$ = $3;
                 }
                 ;
-
-xcp_on_can_data : NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER {
-                    $$ = new XCP_ON_CAN(@1, (UInt64)$1, (UInt64)$3, (UInt64)$5, (UInt64)$7);
+                
+daq_list_can_id : BEGIN DAQ_LIST_CAN_ID daq_list_can_id_data END DAQ_LIST_CAN_ID {
+                    $$ = $3;
+                }
+                ;
+                
+daq_list_can_id_data : NUMBER FIXED NUMBER {
+                    $$ = new DAQListCanId(@1, (UInt64)$1, (UInt64)$3);
+                }
+                | NUMBER VARIABLE {
+                    $$ = new DAQListCanId(@1, (UInt64)$1, 0);
+                }
+                ;
+                                
+can_id_broadcast_optional : empty
+                          | CAN_ID_BROADCAST NUMBER {
+                            $$ = $2;
+                          }
+                          ;
+                
+xcp_on_can_data : NUMBER can_id_broadcast_optional CAN_ID_MASTER NUMBER CAN_ID_SLAVE NUMBER IDENTIFIER NUMBER {
+                    $$ = new XCP_ON_CAN(@1, (UInt64)$1, (UInt64?)$2, (UInt64)$4, (UInt64)$6, (UInt64)$8);
+                }
+                | xcp_on_can_data daq_list_can_id {
+                    $$ = $1;
+                    $$.DAQCANIds.Add($2);
                 }
                 | xcp_on_can_data catch_unhandled_items
                 ;
-                
+                                              
 xcp_on_udp_ip  : BEGIN XCP_ON_UDP_IP xcp_on_udp_ip_data END XCP_ON_UDP_IP {
                     $$ = $3;
                 }
@@ -1242,11 +1277,14 @@ daq_list_event_fixed : empty
                      ;                           
                         
 daq_list_data : NUMBER IDENTIFIER daq_list_type IDENTIFIER NUMBER IDENTIFIER NUMBER daq_list_first_pid daq_list_event_fixed {
-            $$ = new DAQList(@1, (UInt64)$1, $3.s, (UInt64)$5, (UInt64)$7, $8, $9);
+            $$ = new DAQList(@1, (UInt64)$1, $3.s, (UInt64)$5, (UInt64)$7, (UInt64?)$8, (UInt64?)$9);
 		 }
 		 ;
+
       
-event_data : QUOTED_STRING QUOTED_STRING NUMBER daq_list_type NUMBER NUMBER NUMBER NUMBER {
+                  
+daq_event_data : QUOTED_STRING QUOTED_STRING NUMBER daq_list_type NUMBER NUMBER NUMBER NUMBER {
+            $$ = new DAQEvent(@1, $1, $2, (UInt64)$3, $4.s, (UInt64)$5, (UInt64)$6, (UInt64)$7, (UInt64)$8);
 		 }
 		 ;
          
@@ -1258,10 +1296,14 @@ daq_data : IDENTIFIER NUMBER NUMBER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER IDEN
                     $$ = new DAQ(@1, $1, (UInt64)$2, (UInt64)$3, (UInt64)$4, $5, $6, $7, $8, (UInt64)$9, $10);
                 }
 				| daq_data BEGIN DAQ_LIST daq_list_data END DAQ_LIST {
+                    $$ = $1;
                     $$.DAQLists.Add($4);
                 }
                 | daq_data BEGIN STIM stim_data END STIM
-				| daq_data BEGIN EVENT event_data END EVENT
+				| daq_data BEGIN EVENT daq_event_data END EVENT {
+                    $$ = $1;
+                    $$.DAQEvents.Add($4);
+                }
 				| daq_data catch_unhandled_items
                 ;
 
@@ -1292,8 +1334,8 @@ if_data_xcp_data : {
                 | if_data_xcp_data catch_unhandled_items
                 ;   
                 
-measurement_daq_event : IDENTIFIER {
-                      }
+measurement_daq_event : IDENTIFIER
+                      | VARIABLE
                       | measurement_daq_event catch_unhandled_items
                       ;
                       

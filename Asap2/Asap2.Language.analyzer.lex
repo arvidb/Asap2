@@ -206,6 +206,12 @@ EVENT_FIXED                     { return Make(Token.EVENT_FIXED); }
 FIRST_PID                       { return Make(Token.FIRST_PID); }
 EVENT                           { return Make(Token.EVENT); }
 HOST_NAME                       { return Make(Token.HOST_NAME); }
+DAQ_LIST_CAN_ID                 { return Make(Token.DAQ_LIST_CAN_ID); }
+CAN_ID_BROADCAST                { return Make(Token.CAN_ID_BROADCAST); }
+CAN_ID_MASTER                   { return Make(Token.CAN_ID_MASTER); }
+CAN_ID_SLAVE                    { return Make(Token.CAN_ID_SLAVE); }
+FIXED                           { return Make(Token.FIXED); }
+VARIABLE                        { return Make(Token.VARIABLE); }
 
 A2ML                            { yy_push_state (STATE_A2ML); yylval.sb = new StringBuilder(); }
 
