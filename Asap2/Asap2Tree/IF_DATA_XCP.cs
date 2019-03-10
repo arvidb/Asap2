@@ -23,9 +23,9 @@ namespace Asap2
         }
     }
 
-    public class XCPTransportLayer : Asap2Base
+    public abstract class XCPTransportLayer : Asap2Base
     {
-        public XCPTransportLayer(Location location) : base(location)
+        protected XCPTransportLayer(Location location) : base(location)
         {
         }
     }
@@ -57,15 +57,15 @@ namespace Asap2
             this.AddressGranularity = addressGranularity;
         }
 
-        public UInt64 Version { get; private set; }
+        public UInt64 Version { get; }
 
-        public UInt64 MaxCTO { get; private set; }
-        public UInt64 MaxDTO { get; private set; }
+        public UInt64 MaxCTO { get; }
+        public UInt64 MaxDTO { get; }
 
-        public string ByteOrder { get; private set; }
-        public string AddressGranularity { get; private set; }
+        public string ByteOrder { get; }
+        public string AddressGranularity { get; }
 
-        public List<UInt64> Timeouts { get; private set; } = new List<UInt64>();
+        public List<UInt64> Timeouts { get; } = new List<UInt64>();
     }
 
     public class DAQ : Asap2Base
@@ -85,27 +85,27 @@ namespace Asap2
             this.overloadIndication = overloadIndication;
         }
 
-        public string type { get; private set; }
+        public string type { get; }
 
-        public UInt64 maxDAQ { get; private set; }
-        public UInt64 maxEventChannel { get; private set; }
-        public UInt64 minDAQ { get; private set; }
+        public UInt64 maxDAQ { get; }
+        public UInt64 maxEventChannel { get; }
+        public UInt64 minDAQ { get; }
 
-        public string optimisationType { get; private set; }
-        public string addressExtension { get; private set; }
-        public string identificationField { get; private set; }
-        public string granularityType { get; private set; }
+        public string optimisationType { get; }
+        public string addressExtension { get; }
+        public string identificationField { get; }
+        public string granularityType { get; }
 
-        public UInt64 maxODTEntrySizeDAQ { get; private set; }
+        public UInt64 maxODTEntrySizeDAQ { get; }
 
-        public string overloadIndication { get; private set; }
+        public string overloadIndication { get; }
 
         public List<DAQList> DAQLists = new List<DAQList>();
     }
 
     public class DAQList : Asap2Base
     {
-        public DAQList(Location location, UInt64 number, string type, UInt64 maxOdt, UInt64 maxOdtEntries, Nullable<decimal> firstPID, Nullable<decimal> eventFixed) : base(location)
+        public DAQList(Location location, UInt64 number, string type, UInt64 maxOdt, UInt64 maxOdtEntries, decimal? firstPID, decimal? eventFixed) : base(location)
         {
             this.Number = number;
             this.Type = type;
@@ -115,11 +115,11 @@ namespace Asap2
             this.EventFixed = (UInt64)(eventFixed ?? 0);
         }
 
-        public UInt64 Number { get; private set; }
-        public string Type { get; private set; }
-        public UInt64 MaxOdt { get; private set; }
-        public UInt64 MaxOdtEntries { get; private set; }
-        public UInt64 FirstPID { get; private set; }
-        public UInt64 EventFixed { get; private set; }
+        public UInt64 Number { get; }
+        public string Type { get; }
+        public UInt64 MaxOdt { get; }
+        public UInt64 MaxOdtEntries { get; }
+        public UInt64 FirstPID { get; }
+        public UInt64 EventFixed { get; }
     }
 }

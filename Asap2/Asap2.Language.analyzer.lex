@@ -178,16 +178,29 @@ IF_DATA                         { return Make(Token.IF_DATA); }
 ASAP1B_DIAGNOSTIC_SERVICES      { return Make(Token.ASAP1B_DIAGNOSTIC_SERVICES); }
 TP_BLOB                         { return Make(Token.TP_BLOB); }
 CAN                             { return Make(Token.CAN); }
+TransportProtocolVersion        { return Make(Token.TransportProtocolVersion); }
 SOURCE                          { return Make(Token.SOURCE); }
 ADDRESS                         { return Make(Token.ADDRESS); }
+QP_BLOB                         { return Make(Token.QP_BLOB); }
+QP_BLOB_VERSION                 { return Make(Token.QP_BLOB_VERSION); }
+UUDT_CAN_IDs                    { return Make(Token.UUDT_CAN_IDs); }
+FIRST_CAN_ID                    { return Make(Token.FIRST_CAN_ID); }
+LAST_CAN_ID                     { return Make(Token.LAST_CAN_ID); }
+TRANSMISSION_MODE               { return Make(Token.TRANSMISSION_MODE); }
+AVAILABLE_PERIODIC_IDENTIFIER_RANGE { return Make(Token.AVAILABLE_PERIODIC_IDENTIFIER_RANGE); }
+FIRST_ID                        { return Make(Token.FIRST_ID); }
+LAST_ID                         { return Make(Token.LAST_ID); }
+AVAILABLE_ON                    { return Make(Token.AVAILABLE_ON); }
 
 /* XCP */
 XCP                             { return Make(Token.XCP); }
 STIM                            { return Make(Token.STIM); }
+DAQ_STIM                        { return Make(Token.DAQ_STIM); }
 XCP_ON_CAN                      { return Make(Token.XCP_ON_CAN); }
 PROTOCOL_LAYER                  { return Make(Token.PROTOCOL_LAYER); }
 DAQ                             { return Make(Token.DAQ); }
 DAQ_LIST                        { return Make(Token.DAQ_LIST); }
+DAQ_EVENT                       { return Make(Token.DAQ_EVENT); }
 EVENT_FIXED                     { return Make(Token.EVENT_FIXED); }
 FIRST_PID                       { return Make(Token.FIRST_PID); }
 EVENT                           { return Make(Token.EVENT); }

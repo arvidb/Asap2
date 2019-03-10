@@ -16,6 +16,7 @@ namespace Asap2
         {
             DERIVED,
             SI_CONVERSION,
+            EXTENDED_SI,
         }
         public UNIT(Location location, string Name, string LongIdentifier, string Display, Type type) : base(location)
         {

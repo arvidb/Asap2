@@ -10,6 +10,7 @@
             public Nullable<decimal> d_null;
             public String s;
             public StringBuilder sb;
+            public Tuple<UInt64, UInt64> tuple_num_64;
             public ALIGNMENT.ALIGNMENT_type alignment_token;
             public ALIGNMENT alignment;
             public DEPOSIT deposit;
@@ -27,7 +28,12 @@
             public IF_DATA_ASAP1B_DIAGNOSTIC_SERVICES if_data_asap1b_diag;
             public TP_BLOB tp_blob;
             public CAN_BLOB can_blob;
-
+            public SOURCE source;
+            public QP_BLOB qp_blob;
+            public UUDT_CAN_IDS uudt_can_ids;
+            public List<UUDT_CAN_IDS> uudt_can_ids_list;
+            public AVAILABLE_PERIODIC_IDENTIFIER_RANGE available_periodic_identifier_range;
+            
             /* XCP */
             public IF_DATA_XCP if_data_xcp;
             public IF_DATA_SEGMENT_XCP if_data_segment_xcp;
@@ -226,16 +232,32 @@
 %token ASAP1B_DIAGNOSTIC_SERVICES
 %token TP_BLOB
 %token CAN
+%token TransportProtocolVersion
 %token SOURCE
 %token ADDRESS
+%token QP_BLOB
+%token QP_BLOB_VERSION
+%token UUDT_CAN_IDs
+%token FIRST_CAN_ID
+%token LAST_CAN_ID
+%token TRANSMISSION_MODE
+%token TRANSMISSION_MODE_SLOW
+%token TRANSMISSION_MODE_MEDIUM
+%token TRANSMISSION_MODE_FAST
+%token AVAILABLE_PERIODIC_IDENTIFIER_RANGE
+%token FIRST_ID
+%token LAST_ID
+%token AVAILABLE_ON
 
 /* XCP */
 %token XCP
 %token PROTOCOL_LAYER
 %token STIM
+%token DAQ_STIM
 %token XCP_ON_CAN
 %token DAQ
 %token DAQ_LIST
+%token DAQ_EVENT
 %token FIRST_PID
 %token EVENT_FIXED
 %token EVENT
@@ -314,12 +336,20 @@
 %type <tp_blob>             tp_blob_data
 %type <can_blob>            can_blob
 %type <can_blob>            can_blob_data
+%type <tuple_num_64>        network_limits_optional
+%type <source>              source
+%type <source>              source_data
+%type <uudt_can_ids_list>   source_data_can
+%type <uudt_can_ids>        uudt_can_ids
+%type <available_periodic_identifier_range> available_prdi_range
 
 /* XCP */
 %type <if_data_xcp>         if_data_xcp
 %type <if_data_xcp>         if_data_xcp_data
 %type <if_data_segment_xcp> if_data_segment_xcp
 %type <if_data_segment_xcp> if_data_segment_xcp_data
+%type <if_data>             if_data_measurement_xcp
+%type <if_data>             if_data_measurement_xcp_data
 %type <protocol_layer>      protocol_layer
 %type <protocol_layer>      protocol_layer_data
 %type <xcp_on_can>          xcp_on_can
@@ -1164,6 +1194,7 @@ daq  : BEGIN DAQ daq_data END DAQ {
 
 daq_list_type : DAQ
               | STIM
+              | DAQ_STIM
               ;
 
 daq_list_first_pid : empty
@@ -1183,9 +1214,13 @@ daq_list_data : NUMBER IDENTIFIER daq_list_type IDENTIFIER NUMBER IDENTIFIER NUM
 		 }
 		 ;
       
-event_data : QUOTED_STRING QUOTED_STRING NUMBER DAQ NUMBER NUMBER NUMBER NUMBER {
+event_data : QUOTED_STRING QUOTED_STRING NUMBER daq_list_type NUMBER NUMBER NUMBER NUMBER {
 		 }
 		 ;
+         
+stim_data : IDENTIFIER NUMBER {
+         }
+         ;
 
 daq_data : IDENTIFIER NUMBER NUMBER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER IDENTIFIER NUMBER IDENTIFIER {
                     $$ = new DAQ(@1, $1, (UInt64)$2, (UInt64)$3, (UInt64)$4, $5, $6, $7, $8, (UInt64)$9, $10);
@@ -1193,6 +1228,7 @@ daq_data : IDENTIFIER NUMBER NUMBER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER IDEN
 				| daq_data BEGIN DAQ_LIST daq_list_data END DAQ_LIST {
                     $$.DAQLists.Add($4);
                 }
+                | daq_data BEGIN STIM stim_data END STIM
 				| daq_data BEGIN EVENT event_data END EVENT
 				| daq_data catch_unhandled_items
                 ;
@@ -1219,7 +1255,24 @@ if_data_xcp_data : {
                 }
                 | if_data_xcp_data catch_unhandled_items
                 ;   
+                
+measurement_daq_event : IDENTIFIER {
+                      }
+                      | measurement_daq_event catch_unhandled_items
+                      ;
+                      
+if_data_measurement_xcp : BEGIN IF_DATA XCP if_data_measurement_xcp_data END IF_DATA {
+                    $$ = $4;
+                }
+                ;
 
+if_data_measurement_xcp_data : {
+                    $$ = new IF_DATA(@$, "Measurement XCP");
+                }
+                | if_data_measurement_xcp_data BEGIN DAQ_EVENT measurement_daq_event END DAQ_EVENT
+                | if_data_measurement_xcp_data catch_unhandled_items
+                ;  
+                
 if_data_segment_xcp : BEGIN IF_DATA XCP if_data_segment_xcp_data END IF_DATA {
                     $$ = $4;
                 }
@@ -1232,22 +1285,67 @@ if_data_segment_xcp_data : {
                 ;                
 
 source : BEGIN SOURCE source_data END SOURCE {
+            $$ = $3;
         }
         ;
-
-source_data :
-        | source_data can_blob
-        | source_data IDENTIFIER CAN
+                     
+available_on_enum :
+                   | CAN
+                   ;
+                       
+source_data : QUOTED_STRING NUMBER NUMBER {
+            $$ = new SOURCE(@$, $1, (Int64)$2, (Int64)$3);
+        }
+        | source_data QP_BLOB
+        | source_data QP_BLOB_VERSION NUMBER {
+            $$ = $1;
+            $$.QPBlob = new QP_BLOB(@$, (UInt64)$3);
+        }
+        | source_data TRANSMISSION_MODE IDENTIFIER {
+            $$ = $1;
+            $$.QPBlob.TransmissionMode = (QP_BLOB.TRANSMISSION_MODE)EnumToStringOrAbort(typeof(QP_BLOB.TRANSMISSION_MODE), $3);
+        }
+        | source_data BEGIN CAN source_data_can END CAN {
+            $$ = $1;
+            $$.QPBlob.UUDTRange.AddRange($4);
+        }
+        | source_data BEGIN AVAILABLE_PERIODIC_IDENTIFIER_RANGE available_prdi_range END AVAILABLE_PERIODIC_IDENTIFIER_RANGE {
+            $$ = $1;
+            $$.QPBlob.PRDIRange = $4;
+        }
+        | source_data AVAILABLE_ON available_on_enum
         | source_data catch_unhandled_items
         ;        
-
+        
+available_prdi_range : FIRST_ID NUMBER LAST_ID NUMBER {
+                $$ = new AVAILABLE_PERIODIC_IDENTIFIER_RANGE(@$, (UInt64)$2, (UInt64)$4);
+             }
+             ;
+             
+source_data_can : {
+                    $$ = new List<UUDT_CAN_IDS>();
+                } 
+                | source_data_can uudt_can_ids {
+                    $$ = $1;
+                    $$.Add($2);
+                }
+                ;
+                          
+uudt_can_ids : BEGIN UUDT_CAN_IDs FIRST_CAN_ID NUMBER LAST_CAN_ID NUMBER END UUDT_CAN_IDs {
+                $$ = new UUDT_CAN_IDS(@$, (UInt64)$4, (UInt64)$6);
+             }
+             ;
+        
 tp_blob : BEGIN TP_BLOB tp_blob_data END TP_BLOB {
             $$ = $3;
         }        
-        ;
-
-tp_blob_data : {
-                $$ = new TP_BLOB(@$);
+        ; 
+                  
+tp_blob_data : NUMBER IDENTIFIER IDENTIFIER {
+                $$ = new TP_BLOB(@$, (UInt64)$1, $2, (TP_BLOB.BYTEORDER)EnumToStringOrAbort(typeof(TP_BLOB.BYTEORDER), $3));
+             }
+             | NUMBER IDENTIFIER NUMBER {
+                $$ = new TP_BLOB(@$, (UInt64)$1, $2, (TP_BLOB.BYTEORDER)EnumToStringOrAbort(typeof(TP_BLOB.BYTEORDER), "1"));
              }
              | tp_blob_data can_blob {
                 $$ = $1;
@@ -1260,13 +1358,24 @@ can_blob : BEGIN CAN can_blob_data END CAN {
             $$ = $3;
         }        
         ;
-
-can_blob_data : {
-                $$ = new CAN_BLOB(@$);
+        
+network_limits_optional : empty
+                | IDENTIFIER NUMBER NUMBER {
+                    $$ = new Tuple<UInt64, UInt64>((UInt64)$2, (UInt64)$3);
+                }
+                ;
+        
+can_blob_data : NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER network_limits_optional {
+                $$ = new CAN_BLOB(@$, (UInt64)$1, (UInt64)$3, (UInt64)$5, (UInt64)$7, (UInt64)$9, (UInt64)$11, $12);
              }
              | can_blob_data BEGIN ADDRESS NUMBER NUMBER END ADDRESS {
+                $$ = $1;
                 $$.USDTSendId = (UInt64)$4;
                 $$.USDTReceiveId = (UInt64)$5;
+             }
+             | can_blob_data BEGIN TransportProtocolVersion IDENTIFIER END TransportProtocolVersion {
+                $$ = $1;
+                $$.TransportProtocolVersion = $4;
              }
              | can_blob_data catch_unhandled_items
              ;                                                    
@@ -1284,7 +1393,8 @@ if_data_asap1b_diag_data : {
                     $$.TPBlob = $2;
                 }
                 | if_data_asap1b_diag_data source {
-                    // TODO
+                    $$ = $1;
+                    $$.Sources.Add($2);
                 }
                 | if_data_asap1b_diag_data catch_unhandled_items
                 ;
@@ -1297,6 +1407,8 @@ if_data  : BEGIN IF_DATA if_data_data END IF_DATA {
 if_data_data : IDENTIFIER {
 					$$ = new IF_DATA(@$, $1);
                 }
+                | if_data_data tp_blob
+                | if_data_data source
                 | if_data_data catch_unhandled_items
                 ;
 
@@ -1519,6 +1631,10 @@ measurement_data :  IDENTIFIER QUOTED_STRING IDENTIFIER IDENTIFIER NUMBER NUMBER
                     $$.Virtual = $2;
                 }
                 | measurement_data if_data {
+                    $$ = $1;
+                    $$.if_data.Add($2);
+                }
+                | measurement_data if_data_measurement_xcp {
                     $$ = $1;
                     $$.if_data.Add($2);
                 }
@@ -2061,6 +2177,8 @@ var_address
 any_parameter : IDENTIFIER
                 | QUOTED_STRING
                 | NUMBER
+                | MEASUREMENT
+                | EVENT
 				| BEGIN IDENTIFIER any_parameter_list_data END IDENTIFIER
                 ;
 
