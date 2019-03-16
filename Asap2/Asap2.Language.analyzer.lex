@@ -9,9 +9,9 @@
     // User code is all now in Asap2.Scanner.cs
 %}
 
-Identifier              [A-Za-z_][A-Za-z0-9@\-_\.\[\]]*
+Identifier              ([0-9]+_)?[A-Za-z_][A-Za-z0-9@\-_\/\(\)\.\[\]]*
 Space                   [ \t\u000c]
-Decimal                 [\-+]?[0-9]*\.?[0-9]+([eE][\-+]?[0-9]+)?
+Decimal                 [\-+]?[0-9]*\.?[0-9]*([eE][\-+]?[0-9]+)?
 HexNumber               0x[0-9A-Fa-f]+
 Eol                     (\r?\n)
 Alignment               ALIGNMENT_[A-Za-z0-9_]+
@@ -191,6 +191,14 @@ AVAILABLE_PERIODIC_IDENTIFIER_RANGE { return Make(Token.AVAILABLE_PERIODIC_IDENT
 FIRST_ID                        { return Make(Token.FIRST_ID); }
 LAST_ID                         { return Make(Token.LAST_ID); }
 AVAILABLE_ON                    { return Make(Token.AVAILABLE_ON); }
+NETWORK_LIMITS                  { return Make(Token.NETWORK_LIMITS); }
+
+TesterPresentOptions            { return Make(Token.TesterPresentOptions); }
+SamplePoint                     { return Make(Token.SamplePoint); }
+SamplesPerBit                   { return Make(Token.SamplesPerBit); }
+BTL_CYCLES                      { return Make(Token.BTL_CYCLES); }
+SJW                             { return Make(Token.SJW); }
+SYNC_EDGE                       { return Make(Token.SYNC_EDGE); }
 
 /* XCP */
 XCP                             { return Make(Token.XCP); }

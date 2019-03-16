@@ -251,6 +251,13 @@
 %token FIRST_ID
 %token LAST_ID
 %token AVAILABLE_ON
+%token NETWORK_LIMITS
+%token TesterPresentOptions
+%token SamplePoint
+%token SamplesPerBit
+%token BTL_CYCLES
+%token SJW
+%token SYNC_EDGE
 
 /* XCP */
 %token XCP
@@ -348,7 +355,6 @@
 %type <tp_blob>             tp_blob_data
 %type <can_blob>            can_blob
 %type <can_blob>            can_blob_data
-%type <tuple_num_64>        network_limits_optional
 %type <source>              source
 %type <source>              source_data
 %type <uudt_can_ids_list>   source_data_can
@@ -560,7 +566,7 @@ axis_pts
         $$ = $3;
     }
     ;
-
+        
 axis_pts_data
     : IDENTIFIER QUOTED_STRING NUMBER IDENTIFIER IDENTIFIER NUMBER IDENTIFIER NUMBER NUMBER NUMBER {
         $$ = new AXIS_PTS(location: @$, Name: $1, LongIdentifier: $2, Address: (UInt64)$3, InputQuantity: $4, Deposit: $5, MaxDiff: $6, Conversion: $7, MaxAxisPoints: (UInt64)$8, LowerLimit: $9, UpperLimit: $10);
@@ -609,6 +615,10 @@ axis_pts_data
         $$ = $1;
         $$.if_data.Add($2);
     }
+    | axis_pts_data if_data_asap1b_diag {
+        $$ = $1;
+        $$.if_data.Add($2);
+    }
     | axis_pts_data monotony {
         $$ = $1;
         $$.monotony = $2;
@@ -633,6 +643,7 @@ axis_pts_data
         $$ = $1;
         $$.symbol_link = $2;
     }
+    | axis_pts_data FUNCTION_LIST IDENTIFIER
     ;
 
 fix_axis_par_list
@@ -680,6 +691,9 @@ calibration_method          : BEGIN CALIBRATION_METHOD calibration_method_data E
                             ;
 
 calibration_method_data     : QUOTED_STRING NUMBER {
+                                $$ = new CALIBRATION_METHOD(@$, $1, (ulong)$2);
+                            }
+                            | IDENTIFIER NUMBER {
                                 $$ = new CALIBRATION_METHOD(@$, $1, (ulong)$2);
                             }
                             | calibration_method_data calibration_handle {
@@ -824,6 +838,10 @@ characteristic_data
         $$ = $1;
         $$.if_data.Add($2);
     }
+    | characteristic_data if_data_asap1b_diag {
+        $$ = $1;
+        $$.if_data.Add($2);
+    }
     |  characteristic_data BEGIN MAP_LIST IDENTIFIER_list END MAP_LIST {
         $$ = $1;
         $$.map_list = new MAP_LIST(@2);
@@ -861,6 +879,7 @@ characteristic_data
         $$ = $1;
         $$.symbol_link = $2;
     }
+    |  characteristic_data FUNCTION_LIST IDENTIFIER
     |  characteristic_data BEGIN VIRTUAL_CHARACTERISTIC QUOTED_STRING IDENTIFIER_list END VIRTUAL_CHARACTERISTIC {
         $$ = $1;
         $$.virtual_characteristic = new VIRTUAL_CHARACTERISTIC(@2, $4);
@@ -996,6 +1015,10 @@ header_data     : QUOTED_STRING {
                 | header_data PROJECT_NO IDENTIFIER {
                     $$ = $1;
                     $$.project_no = $3;
+                }
+                | header_data PROJECT_NO NUMBER {
+                    $$ = $1;
+                    $$.project_no = $3.ToString();
                 }
                 ;
 
@@ -1221,7 +1244,7 @@ can_id_broadcast_optional : empty
                           }
                           ;
 
-xcp_on_can_optional_data : IDENTIFIER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER
+xcp_on_can_optional_data : IDENTIFIER NUMBER IDENTIFIER IDENTIFIER BTL_CYCLES NUMBER SJW NUMBER SYNC_EDGE IDENTIFIER IDENTIFIER
                          | IDENTIFIER
                          | empty
                          ;
@@ -1385,13 +1408,26 @@ available_on_enum :
                    ;
 
 qp_blob_data : 
+             | qp_blob_data IDENTIFIER
+             | qp_blob_data NUMBER
+             | qp_blob_data FIRST_PID
+             | qp_blob_data QP_BLOB_VERSION
+             | qp_blob_data TRANSMISSION_MODE
+             | qp_blob_data AVAILABLE_ON available_on_enum
+             | qp_blob_data BEGIN CAN source_data_can END CAN
+             | qp_blob_data BEGIN AVAILABLE_PERIODIC_IDENTIFIER_RANGE available_prdi_range END AVAILABLE_PERIODIC_IDENTIFIER_RANGE
              | qp_blob_data catch_unhandled_items
              ;
-                                                                     
-source_data : QUOTED_STRING NUMBER NUMBER {
+
+source_data_disp_identifier_optional : DISPLAY_IDENTIFIER QUOTED_STRING
+                                     | empty
+                                     ;                                                                     
+                                                                                                                                                                                                               
+source_data : QUOTED_STRING NUMBER NUMBER source_data_disp_identifier_optional {
             $$ = new SOURCE(@$, $1, (Int64)$2, (Int64)$3);
         }
         | source_data QP_BLOB
+        | source_data FIRST_PID
         | source_data BEGIN QP_BLOB qp_blob_data END QP_BLOB
         | source_data QP_BLOB_VERSION NUMBER {
             $$ = $1;
@@ -1443,9 +1479,18 @@ tp_blob_data : NUMBER IDENTIFIER IDENTIFIER {
              | NUMBER IDENTIFIER NUMBER {
                 $$ = new TP_BLOB(@$, (UInt64)$1, $2, (TP_BLOB.BYTEORDER)EnumToStringOrAbort(typeof(TP_BLOB.BYTEORDER), "1"));
              }
+             | NUMBER NUMBER {
+                $$ = new TP_BLOB(@$, (UInt64)$1, "", TP_BLOB.BYTEORDER.BYTEORDER_MSB_FIRST);
+             }
              | IDENTIFIER {
                 $$ = new TP_BLOB(@$, 0, "", (TP_BLOB.BYTEORDER)EnumToStringOrAbort(typeof(TP_BLOB.BYTEORDER), $1));
              }
+             /* TODO: Support can blob data directly under tp_blob */
+             | tp_blob_data SamplePoint NUMBER 
+             | tp_blob_data BTL_CYCLES NUMBER
+             | tp_blob_data SJW NUMBER
+             | tp_blob_data SYNC_EDGE IDENTIFIER
+             | tp_blob_data BYTE_ORDER IDENTIFIER
              | tp_blob_data can_blob {
                 $$ = $1;
                 $$.CANBlob = $2;
@@ -1458,14 +1503,43 @@ can_blob : BEGIN CAN can_blob_data END CAN {
         }        
         ;
         
-network_limits_optional : empty
-                | IDENTIFIER NUMBER NUMBER {
-                    $$ = new Tuple<UInt64, UInt64>((UInt64)$2, (UInt64)$3);
-                }
-                ;
-        
-can_blob_data : NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER NUMBER network_limits_optional {
-                $$ = new CAN_BLOB(@$, (UInt64)$1, (UInt64)$3, (UInt64)$5, (UInt64)$7, (UInt64)$9, (UInt64)$11, $12);
+can_blob_data : NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER {
+                $$ = new CAN_BLOB(@$, (UInt64)$1, (UInt64)$2, (UInt64)$3, (UInt64)$4, (UInt64)$5, (UInt64)$6);
+             }
+             | NUMBER {
+                $$ = new CAN_BLOB(@$, (UInt64)$1);
+             }
+             | can_blob_data TesterPresentOptions IDENTIFIER {
+                $$ = $1;
+                $$.TesterPresentOptions = $3;
+             }
+             | can_blob_data SamplePoint NUMBER {
+                $$ = $1;
+                $$.SamplePoint = (UInt64)$3;
+             }
+             | can_blob_data SamplesPerBit NUMBER {
+                $$ = $1;
+                $$.SamplesPerBit = (UInt64)$3;
+             }
+             | can_blob_data BTL_CYCLES NUMBER {
+                $$ = $1;
+                $$.BTLCycles = (UInt64)$3;
+             }
+             | can_blob_data SJW NUMBER {
+                $$ = $1;
+                $$.SJW = (UInt64)$3;
+             }
+             | can_blob_data SYNC_EDGE NUMBER {
+                $$ = $1;
+                $$.SyncEdge = (UInt64)$3;
+             }
+             | can_blob_data TransportProtocolVersion IDENTIFIER {
+                $$ = $1;
+                $$.TransportProtocolVersion = $3;
+             }
+             | can_blob_data NETWORK_LIMITS NUMBER NUMBER {
+                $$ = $1;
+                $$.NetworkLimits = new Tuple<UInt64, UInt64>((UInt64)$3, (UInt64)$4);
              }
              | can_blob_data BEGIN ADDRESS NUMBER NUMBER END ADDRESS {
                 $$ = $1;
@@ -1729,7 +1803,12 @@ measurement_data :  IDENTIFIER QUOTED_STRING IDENTIFIER IDENTIFIER NUMBER NUMBER
                     $$ = $1;
                     $$.Virtual = $2;
                 }
+                | measurement_data FUNCTION_LIST IDENTIFIER
                 | measurement_data if_data {
+                    $$ = $1;
+                    $$.if_data.Add($2);
+                }
+                | measurement_data if_data_asap1b_diag {
                     $$ = $1;
                     $$.if_data.Add($2);
                 }
@@ -1840,9 +1919,13 @@ memory_segment  : BEGIN MEMORY_SEGMENT memory_segment_data END MEMORY_SEGMENT {
                     $$ = $3;
                 }
                 ;
-
-memory_segment_data : IDENTIFIER QUOTED_STRING IDENTIFIER IDENTIFIER IDENTIFIER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER {
-                    MEMORY_SEGMENT.PrgType PrgType = (MEMORY_SEGMENT.PrgType)EnumToStringOrAbort(typeof(MEMORY_SEGMENT.PrgType), $3);
+                
+memory_segment_prg_type : IDENTIFIER
+                        | RESERVED
+                        ;
+                
+memory_segment_data : IDENTIFIER QUOTED_STRING memory_segment_prg_type IDENTIFIER IDENTIFIER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER {
+                    MEMORY_SEGMENT.PrgType PrgType = (MEMORY_SEGMENT.PrgType)EnumToStringOrAbort(typeof(MEMORY_SEGMENT.PrgType), $3.s);
                     MEMORY_SEGMENT.MemoryType MemoryType = (MEMORY_SEGMENT.MemoryType)EnumToStringOrAbort(typeof(MEMORY_SEGMENT.MemoryType), $4);
                     MEMORY_SEGMENT.Attribute Attribute = (MEMORY_SEGMENT.Attribute)EnumToStringOrAbort(typeof(MEMORY_SEGMENT.Attribute), $5);
                     $$ = new MEMORY_SEGMENT(@$, $1, $2, PrgType, MemoryType, Attribute, (UInt64)$6, (UInt64)$7, (Int64)$8, (Int64)$9, (Int64)$10, (Int64)$11, (Int64)$12);
@@ -2278,6 +2361,10 @@ any_parameter : IDENTIFIER
                 | NUMBER
                 | MEASUREMENT
                 | EVENT
+                | DAQ
+                | RESERVED
+                | TesterPresentOptions
+                | BTL_CYCLES
 				| BEGIN IDENTIFIER any_parameter_list_data END IDENTIFIER
                 ;
 

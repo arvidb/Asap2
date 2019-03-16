@@ -57,7 +57,9 @@ namespace Asap2
             BYTEORDER_MSB_FIRST = 1,
             BYTEORDER_MSB_LAST = 2,
             BYTE_ORDER_MSB_FIRST = 1,
-            BYTE_ORDER_MSB_LAST = 2
+            BYTE_ORDER_MSB_LAST = 2,
+            MSB_FIRST = 1,
+            MSB_LAST = 2
         }
 
         public TP_BLOB(Location location, UInt64 version, string protocolVersion, BYTEORDER byteOrder) : base(location)
@@ -77,7 +79,7 @@ namespace Asap2
     public class CAN_BLOB : Asap2Base
     {
         public CAN_BLOB(Location location, UInt64 baudrate, UInt64 samplePoint, UInt64 samplesPerBit, 
-            UInt64 bTLCycles, UInt64 sJW, UInt64 syncEdge, Tuple<UInt64, UInt64> networkLimits) : base(location)
+            UInt64 bTLCycles, UInt64 sJW, UInt64 syncEdge) : base(location)
         {
             Baudrate = baudrate;
             SamplePoint = samplePoint;
@@ -85,19 +87,24 @@ namespace Asap2
             BTLCycles = bTLCycles;
             SJW = sJW;
             SyncEdge = syncEdge;
-            NetworkLimits = networkLimits;
+        }
+
+        public CAN_BLOB(Location location, UInt64 baudrate) : base(location)
+        {
+            Baudrate = baudrate;
         }
 
         public UInt64 Baudrate { get; }
-        public UInt64 SamplePoint { get; }
-        public UInt64 SamplesPerBit { get; }
-        public UInt64 BTLCycles { get; }
-        public UInt64 SJW { get; }
-        public UInt64 SyncEdge { get; }
+        public UInt64 SamplePoint { get; set; }
+        public UInt64 SamplesPerBit { get; set; }
+        public UInt64 BTLCycles { get; set; }
+        public UInt64 SJW { get; set; }
+        public UInt64 SyncEdge { get; set; }
 
+        public string TesterPresentOptions { get; set; }
         public string TransportProtocolVersion { get; set; }
 
-        public Tuple<UInt64, UInt64> NetworkLimits { get; }
+        public Tuple<UInt64, UInt64> NetworkLimits { get; set; }
 
         public UInt64 USDTSendId { get; set; }
         public UInt64 USDTReceiveId { get; set; }
