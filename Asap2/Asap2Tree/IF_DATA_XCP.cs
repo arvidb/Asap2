@@ -60,6 +60,9 @@ namespace Asap2
         public UInt64 Baudrate { get; }
 
         public List<DAQListCanId> DAQCANIds { get; } = new List<DAQListCanId>();
+
+        public List<DAQ> DAQInfo = new List<DAQ>();
+        public PROTOCOL_LAYER ProtocolLayer { get; set; }
     }
 
     public class XCP_ON_UDP_IP : XCPTransportLayer

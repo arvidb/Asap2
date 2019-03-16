@@ -1220,13 +1220,26 @@ can_id_broadcast_optional : empty
                             $$ = $2;
                           }
                           ;
-                
-xcp_on_can_data : NUMBER can_id_broadcast_optional CAN_ID_MASTER NUMBER CAN_ID_SLAVE NUMBER IDENTIFIER NUMBER {
+
+xcp_on_can_optional_data : IDENTIFIER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER NUMBER IDENTIFIER NUMBER IDENTIFIER IDENTIFIER IDENTIFIER
+                         | IDENTIFIER
+                         | empty
+                         ;
+                                                
+xcp_on_can_data : NUMBER can_id_broadcast_optional CAN_ID_MASTER NUMBER CAN_ID_SLAVE NUMBER IDENTIFIER NUMBER xcp_on_can_optional_data {
                     $$ = new XCP_ON_CAN(@1, (UInt64)$1, (UInt64?)$2, (UInt64)$4, (UInt64)$6, (UInt64)$8);
                 }
                 | xcp_on_can_data daq_list_can_id {
                     $$ = $1;
                     $$.DAQCANIds.Add($2);
+                }
+                | xcp_on_can_data protocol_layer {
+                    $$ = $1;
+                    $$.ProtocolLayer    = $2;
+                }
+                | xcp_on_can_data daq {
+                    $$ = $1;
+                    $$.DAQInfo.Add($2);
                 }
                 | xcp_on_can_data catch_unhandled_items
                 ;
@@ -1370,11 +1383,16 @@ source : BEGIN SOURCE source_data END SOURCE {
 available_on_enum :
                    | CAN
                    ;
-                       
+
+qp_blob_data : 
+             | qp_blob_data catch_unhandled_items
+             ;
+                                                                     
 source_data : QUOTED_STRING NUMBER NUMBER {
             $$ = new SOURCE(@$, $1, (Int64)$2, (Int64)$3);
         }
         | source_data QP_BLOB
+        | source_data BEGIN QP_BLOB qp_blob_data END QP_BLOB
         | source_data QP_BLOB_VERSION NUMBER {
             $$ = $1;
             $$.QPBlob = new QP_BLOB(@$, (UInt64)$3);
@@ -1424,6 +1442,9 @@ tp_blob_data : NUMBER IDENTIFIER IDENTIFIER {
              }
              | NUMBER IDENTIFIER NUMBER {
                 $$ = new TP_BLOB(@$, (UInt64)$1, $2, (TP_BLOB.BYTEORDER)EnumToStringOrAbort(typeof(TP_BLOB.BYTEORDER), "1"));
+             }
+             | IDENTIFIER {
+                $$ = new TP_BLOB(@$, 0, "", (TP_BLOB.BYTEORDER)EnumToStringOrAbort(typeof(TP_BLOB.BYTEORDER), $1));
              }
              | tp_blob_data can_blob {
                 $$ = $1;

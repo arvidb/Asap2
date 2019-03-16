@@ -55,7 +55,9 @@ namespace Asap2
         public enum BYTEORDER
         {
             BYTEORDER_MSB_FIRST = 1,
-            BYTEORDER_MSB_LAST = 2
+            BYTEORDER_MSB_LAST = 2,
+            BYTE_ORDER_MSB_FIRST = 1,
+            BYTE_ORDER_MSB_LAST = 2
         }
 
         public TP_BLOB(Location location, UInt64 version, string protocolVersion, BYTEORDER byteOrder) : base(location)
